@@ -1,0 +1,24 @@
+%html
+    %head
+        %title Axis and Allies Battle Simulator
+        %script{:type => "text/javascript", :src => "jquery.js"}
+        %script{:type => "text/javascript", :src => "jquery-ui-1.8.5.custom.min.js"}
+        %script{:type => "text/javascript", :src => "jlayout.grid.js"}
+        %script{:type => "text/javascript", :src => "jlayout.flexgrid.js"}
+        %script{:type => "text/javascript", :src => "jquery.jlayout.js"}
+        %script{:type => "text/javascript", :src => "jquery.sizes.js"}
+        %script{:type => "text/javascript", :src => "axis.js"}
+        <LINK href="axis.css" rel="stylesheet" type="text/css">
+    %body
+
+    %div.content.top
+        %center
+            Axis&Allies Battle Simulator
+    %div.content.body
+        #unitSelector
+        %center
+            %input{type: 'button', id: 'fightButton', value: 'Fight!'}
+        #results
+            %div{id: 'attackerWin'}
+            %div{id: 'defenderWin'}
+

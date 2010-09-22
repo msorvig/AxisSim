@@ -1,0 +1,41 @@
+body {
+  background-color:#353F3E;
+  margin : 20;
+}
+
+.content{ 
+  width: 700px ;
+  height : 50px;
+  margin-left: auto ;
+  margin-right: auto ;
+  
+  padding : 10px;
+
+}
+
+.top {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  -moz-border-radius-topleft: 15px;
+  -moz-border-radius-topright: 15px;
+  background-color : #222222;
+  color : #AAAAAA;
+  text-align:center;
+  font-size:2.5em;
+  
+}
+
+.body {
+  background-color : #AAAAAA;
+  color : #222222;
+  height : 80%;	
+}
+
+#unitSelector {
+  width: 700px ;
+}
+
+
+#defenderColumn {
+  float: right
+}
