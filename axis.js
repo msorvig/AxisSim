@@ -8,8 +8,12 @@
 // Array of: [Unit Name, Attack Rating, Defence Rating, IPC Cost]
 var UnitStats = [
     ["Infantery", 1, 2, 3],
+    ["Artillery", 2, 2, 4],
+    ["Mechanized Infantry", 1, 2, 4],
     ["Tank",      3, 3, 6],
-    ["Fighter",   3, 4, 11]
+    ["Fighter",   3, 4, 10],
+    ["Tactical Bomber", 3, 3, 11],
+    ["Bomber",    4, 1, 11],
 ];
 
 // Unit selector
@@ -18,11 +22,12 @@ var UnitStats = [
 //      fightCallback - callback function - simulate the battle when this is called
 UnitSelector = function (params) {
     var selectorDivElement = params.selectorDivElement;
+    var unitsChangeCallback = params.unitsChangeCallback;
     var fightCallback = params.fightCallback;
 
     //sole.log("UnitSelector " + selectorDivElement);
     $("#fightButton").click( function (){
-        fightCallback(attackerUnits.slice(0), defenderUnits.slice(0));
+        fightCallback();
     });
 
     // Array of unit counts. Array indices corresponds to
@@ -68,9 +73,11 @@ UnitSelector = function (params) {
 
     function createUnitSelectorLine(index, unitArray)
     {
-        unitArray[index] = 0;
+        var inititalUnitCount = 0;
+
+        unitArray[index] = inititalUnitCount;
         var lineEdit = $('<input type="text" />')
-                       .attr("value", 0)
+                       .attr("value", inititalUnitCount)
                        .css("text-align", "center")
                        .maxSize({width : 30})
                        .change(function(event) {
@@ -127,12 +134,14 @@ UnitSelector = function (params) {
             value = 0;
         array[index] = value;
         textInput.attr("value", value);
+        unitsChangeCallback(attackerUnits, defenderUnits);
     }
 
     function setUnitCount(value, array, index) {
         if (value < 0)
             value = 0;
         array[index] = value;
+        unitsChangeCallback(attackerUnits, defenderUnits);
     }
 
     return {
@@ -140,18 +149,70 @@ UnitSelector = function (params) {
     };
 };
 
+// Array Remove - By John Resig (MIT Licensed)
+Array.remove = function(array, from, to) {
+  var rest = array.slice((to || from) + 1 || array.length);
+  array.length = from < 0 ? array.length + from : from;
+  return array.push.apply(array, rest);
+};
+
+Array.prototype.each = function(callBack) {
+    for (var property in this) {
+        if (String(property >>> 0) == property
+            && property >>> 0 != 0xffffffff) {
+            callBack(property, this[property]);
+        }
+    }
+}
+
+Array.prototype.map = function(callBack) {
+    var mapped = [];
+    this.each(function (index, value){
+        mapped[index] = callBack(value, index);
+    });
+    return mapped;
+}
+
 BattleSimulator = function(params) {
     var updateResultCallback = params.updateResultCallback;
-    var battleIterations = 1;
 
+    // static data (never changes)
     var unitRemovalPriority = createRemovalPriorityArray(); // sorted array of unit indices, starting with lowest-value unit (infantry)
+    // Config options:
+    var battleIterations = 2000;
+    var useDice = true; // set to false to simulate an "ideal" no-luck battle.
 
+    // per-battle data (changes when the user changes the unit count and simulateNewBattle is called)
+    var initialAttackerUnits = [];
+    var initialAttackerUnitCount = 0;
+    var initalAttackerUnitCost = 0;
+    var initialDefenderUnits = [];
+    var initialDefenderUnitCount = 0;
+    var initalDefenderUnitCost = 0;
+
+    // per-simulation data, reset before and changes during each simulation round.
     var attackerUnits = [];
     var attackerUnitCount = 0;
-    var defenderUnits = [];
+    var defenderUntis = [];
     var defenderUnitCount = 0;
+    var carriedHits = []; // carries fractional hits to the next battle round when useDice is false;
 
-    var resultString = "";
+    // output data, accumulates as the simulations are run.
+    var simulationCount = 0;
+    var attackerWins = 0;
+    var defenderWins = 0;
+    var mutalAnhiliation = 0;
+
+    // frequency counts, these are sparse arrays. arr[x] gives the number of times x has occured.
+    var attackerIpcLoss = [];
+    var attackerRemaningUnitCount = [];
+    var defenderIpcLoss = [];
+    var defenderRemaningUnitCount = [];
+    var battleRounds = [];
+
+    var idealBattleLog;
+    var simulatedBattleLogs = [];
+    var battleLog = "";
 
     function createRemovalPriorityArray()
     {
@@ -165,71 +226,202 @@ BattleSimulator = function(params) {
         return array;
     }
 
-    function simulateBattle(newAttackerUnits, newDefenderUnits) {
-        // console.log("Fight!");
+    // creates a sparse unit array by only inlcuding indices with a positive unit count.
+    function createSparseUnitArrayCopy(array)
+    {
+        var newArray = [];
+        $.each(array, function(index, value) {
+            if (value > 0)
+                newArray[index] = value;
+        });
+        return newArray;
+    }
 
-        attackerUnits = newAttackerUnits;
-        attackerUnitCount = countUnits(attackerUnits);
-        defenderUnits = newDefenderUnits;
-        defenderUnitCount = countUnits(defenderUnits);
+    function countUnits(unitArray) {
+        //console.log("countUnits " + unitArray);
+        var unitCount = 0;
+        unitArray.each(function(index, count) {
+            //console.log("countUnits at " + index + " " + count);
+            unitCount += count;
+        });
+        //console.log("countUnits " + unitCount);
+        return unitCount;
+    }
 
-        resultString = "";
-        var  i = 1;
+    function calculateUnitCost(unitArray) {
+        var unitCost = 0;
+        unitArray.each(function(index, count) {
+            unitCost += count * UnitStats[index][3];
+        });
+        return unitCost;
+    }
 
-        //sole.log("Unit count: " + attackerUnits + " " + defenderUnits);
+    function sparseArrayToString(array, appendage) {
+        if (appendage == undefined)
+            appendage = "";
+        var string1 = "";
+        array.each(function(index, count) {
+            string1 += (index + ":" + count + appendage + " ")
+        });
+        return string1;
+    }
 
+
+    function simulateNewBattle(newAttackerUnits, newDefenderUnits) {
+        initialAttackerUnits = createSparseUnitArrayCopy(newAttackerUnits);
+        initialAttackerUnitCount = countUnits(initialAttackerUnits);
+        initalAttackerUnitCost = calculateUnitCost(initialAttackerUnits);
+        initialDefenderUnits = createSparseUnitArrayCopy(newDefenderUnits);
+        initialDefenderUnitCount = countUnits(initialDefenderUnits);
+        initalDefenderUnitCost = calculateUnitCost(initialDefenderUnits);
+
+        simulationCount = 0;
+        attackerWins = 0;
+        defenderWins = 0;
+        mutalAnhiliation = 0;
+
+        attackerIpcLoss = [];
+        attackerRemaningUnitCount = [];
+        defenderIpcLoss = [];
+        defenderRemaningUnitCount = [];
+        battleRounds = [];
+
+        idealBattleLog = "";
+        simulatedBattleLogs = [];
+        battleLog = "";
+
+        simulateBattle();
+    }
+
+    function simulateBattle() {
+        battleLog = "";
+
+        for (var i = 0; i < battleIterations; ++i) {
+            setupSimData();
+            simulateOneBattle();
+            simulatedBattleLogs[i] = battleLog;
+        }
+
+        function prettyPrintSparseArray(array) {
+            return sparseArrayToString(array.map(
+                function (value){
+                    return Math.round((value / simulationCount) * 100.0)
+                 }
+             ), "%");
+        }
+
+        updateResultCallback(" Attacker Win: " + Math.round(attackerWins / simulationCount * 100.0) + "%" +
+                             " Defender Win: " + Math.round(defenderWins / simulationCount * 100.0) + "%" +
+                             " Mutal Anhiliation " + Math.round(mutalAnhiliation / simulationCount * 100.0) + "%<br>" +
+                             " Attacker Unit IPC cost: " + initalAttackerUnitCost +
+                             " Defender Unit IPC cost: " + initalDefenderUnitCost + "<br>" +
+                             " <br> Simulated Battles: " + simulationCount +
+                             " <br>" +
+                             " <br> Attacker Remaning Units: " + prettyPrintSparseArray(attackerRemaningUnitCount) +
+                             " <br> Defender Remaning Units: " + prettyPrintSparseArray(defenderRemaningUnitCount) +
+                             " <br> Attacker IPC loss: " + prettyPrintSparseArray(attackerIpcLoss) +
+                             " <br> Defender IPC loss: " + prettyPrintSparseArray(defenderIpcLoss) +
+                             " <br> Battle Rounds: " + prettyPrintSparseArray(battleRounds) +
+                             " <br>",
+                             " <br> Battle Example: <br>" + simulatedBattleLogs[0]);
+    }
+
+
+
+    function setupSimData()
+    {
+        attackerUnits = initialAttackerUnits.slice(0);
+        attackerUnitCount = initialAttackerUnitCount;
+        defenderUnits = initialDefenderUnits.slice(0);
+        defenderUnitCount = initialDefenderUnitCount;
+    }
+
+    function simulateOneBattle() {
+        //defenderIpcLoss("Fight!");
+        carriedHits = [];
+
+        var roundCounter = 1;
+
+        //defenderIpcLoss("first Unit count: " + attackerUnits + " " + defenderUnits);
+        battleLog += "Start ";
+        battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount+ " <br>";
+
+        // Run battle rounds until one side is out of units.
         while (attackerUnitCount > 0 && defenderUnitCount > 0) {
-            resultString += "Round " + i++ + " <br>";
+            battleLog += "Round " + roundCounter++ + " ";
+            // defenderIpcLoss("begin while loop");
             simulateBattleRound();
-            resultString += "Units Left: " + attackerUnits + " " + defenderUnits + " <br>";
-            // sole.log("Unit count: " + attackerUnits + " " + defenderUnits);
+            battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount + " "
+                         + attackerUnits + " " + defenderUnits + " <br>";
+
+            // defenderIpcLoss("Unit count: " + attackerUnits + " " + defenderUnits);
 
         }
 
-        if (attackerUnitCount == 0 && defenderUnitCount == 0)
-            resultString += "Mutal Annhiliation!";
-        else if (attackerUnitCount == 0)
-            resultString += "Defender Wins!";
-        else if (defenderUnitCount == 0)
-            resultString += "Attacker Wins!";
+        function incrementArrayValue(array, index)
+        {
+           if (array[index] == undefined)
+                array[index] = 1;
+           else
+                ++array[index];
+        }
 
-        updateResultCallback(resultString, "");
+        // Determine winner, update output data
+        ++simulationCount;
+        incrementArrayValue(battleRounds, roundCounter);
+        incrementArrayValue(defenderIpcLoss, initalDefenderUnitCost - calculateUnitCost(defenderUnits));
+        incrementArrayValue(defenderRemaningUnitCount, defenderUnitCount);
+        incrementArrayValue(attackerIpcLoss, initalAttackerUnitCost - calculateUnitCost(attackerUnits));
+        incrementArrayValue(attackerRemaningUnitCount, attackerUnitCount);
+
+        if (attackerUnitCount == 0 && defenderUnitCount == 0) {
+            battleLog += "Mutal Annhiliation!";
+            ++mutalAnhiliation;
+        } else if (attackerUnitCount == 0) {
+            battleLog += "Defender Wins!";
+            ++defenderWins;
+        } else if (defenderUnitCount == 0) {
+            battleLog += "Attacker Wins!";
+            ++attackerWins;
+        }
     };
-
-    function countUnits(unitArray) {
-        var unitCount = 0;
-        $.each(unitArray, function(index, value) {
-            unitCount += value;
-        });
-        return unitCount;
-    }
 
     // Runs one round of battle simultaion ( attacker fires, defender fires, casulties removed etc.)
     function simulateBattleRound()
     {
+        //defenderIpcLoss("simulateBattleRound");
         var attackerHits = simulateUnitFire(attackerUnits, 1);
         var defenderHits = simulateUnitFire(defenderUnits, 2);
 
-        //sole.log("hits " + attackerHits + " " + defenderHits);
-        resultString += "Hits:" + attackerHits + " " + defenderHits + "  ";
+        //defenderIpcLoss("hits " + attackerHits + " " + defenderHits);
+        battleLog += "Hits:" + attackerHits + " " + defenderHits + "  ";
 
         attackerUnitCount = removeCasulties(attackerUnits, attackerUnitCount, defenderHits);
         defenderUnitCount = removeCasulties(defenderUnits, defenderUnitCount, attackerHits);
     }
 
-    // In: an array of unit counts, which stat index to use (attacker or defender)
-    // returns the number of hits.
+    // In: an array of unit counts, which stat index to use (attacker or defender).
+    // Returns the number of hits. Uses simulated die rolls if useDice is true,
+    // otherwise computes the "ideal" number of hits.
     function simulateUnitFire(units, statIndex)
     {
+        //defenderIpcLoss("simulateUnitFire " +units);
         var hits = 0;
-        $.each(units, function(unitIndex, count) {
-            for (var i = 0; i < count; ++i) {
-                var toHit = UnitStats[unitIndex][statIndex];
-                var dieRoll = Math.floor(Math.random()*6) + 1;
-                //sole.log("die " + dieRoll + "tohit " + toHit)
-                if (dieRoll <= toHit)
+        units.each(function(unitIndex, count) {
+            var toHit = UnitStats[unitIndex][statIndex];
+            if (useDice) {
+               for (var i = 0; i < count; ++i) {
+                  var dieRoll = Math.floor(Math.random()*6) + 1;
+                  // defenderIpcLoss("die " + dieRoll + "tohit " + toHit)
+                  if (dieRoll <= toHit)
                     ++hits;
-            }
+                }
+             } else { // no dice
+                var computedHits = carryHits[statIndex] + (toHit / 6.0) * count;
+                var floorHits = Math.floor(computedHits);
+                carryHits[statIndex] = computedHits - floorHits;
+                hits = floorHits;
+             }
         });
         return hits;
     }
@@ -242,11 +434,11 @@ BattleSimulator = function(params) {
         // remove units from the units array, starting at the
         // cheapest ones. Keep going until all hits have been
         // taken or we run out of units.
-        $.each(unitRemovalPriority, function(index, value) {
+        unitRemovalPriority.each(function(index, value) {
             if (hits == 0)
                 return false;
             var currentUnitCount = units[value];
-            if (currentUnitCount == 0)
+            if (currentUnitCount == undefined || currentUnitCount == 0)
                 return true;
             if (hits > currentUnitCount) {
                 units[value] = 0;
@@ -262,7 +454,8 @@ BattleSimulator = function(params) {
     }
 
     return {
-        "simulateBattle" : simulateBattle
+        "simulateBattle" : simulateBattle,
+        "simulateNewBattle": simulateNewBattle
     };
 
 };
@@ -281,7 +474,8 @@ $(document).ready(function() {
     );
 
     var unitSelector = new UnitSelector(
-        {"selectorDivElement": $("#unitSelector"),
+         {"selectorDivElement": $("#unitSelector"),
+         "unitsChangeCallback": battlesimulator.simulateNewBattle,
          "fightCallback": battlesimulator.simulateBattle });
     unitSelector.buildSelector();
 });
