@@ -7,9 +7,9 @@
 // Unit stats.
 // Array of: [Unit Name, Attack Rating, Defence Rating, IPC Cost]
 var UnitStats = [
-    ["Infantery", 1, 2, 3],
-    ["Artillery", 2, 2, 4],
+    ["Infantry", 1, 2, 3],
     ["Mechanized Infantry", 1, 2, 4],
+    ["Artillery", 2, 2, 4],
     ["Tank",      3, 3, 6],
     ["Fighter",   3, 4, 10],
     ["Tactical Bomber", 3, 3, 11],
@@ -160,7 +160,9 @@ Array.prototype.each = function(callBack) {
     for (var property in this) {
         if (String(property >>> 0) == property
             && property >>> 0 != 0xffffffff) {
-            callBack(property, this[property]);
+            var ret = callBack(property, this[property]);
+            if (ret === false)
+                return;
         }
     }
 }
@@ -179,8 +181,15 @@ BattleSimulator = function(params) {
     // static data (never changes)
     var unitRemovalPriority = createRemovalPriorityArray(); // sorted array of unit indices, starting with lowest-value unit (infantry)
     // Config options:
-    var battleIterations = 2000;
+    var battleIterations = 1000;
     var useDice = true; // set to false to simulate an "ideal" no-luck battle.
+    // unit indices for lookups
+    var artilleryIndex = findUnit("Artillery");
+    var infantryIndex = findUnit("Infantry");
+    var mechanizedInfantryIndex = findUnit("Mechanized Infantry");
+    var tankIndex = findUnit("Tank");
+    var fighterIndex = findUnit("Fighter");
+    var tacticalBomberIndex = findUnit("TacticalBomber");
 
     // per-battle data (changes when the user changes the unit count and simulateNewBattle is called)
     var initialAttackerUnits = [];
@@ -213,6 +222,17 @@ BattleSimulator = function(params) {
     var idealBattleLog;
     var simulatedBattleLogs = [];
     var battleLog = "";
+
+    function findUnit(unitName) {
+        var foundIndex = -1;
+        UnitStats.each(function(index, value) {
+            if (value[0] == unitName) {
+                foundIndex = index;
+                return false;
+            }
+        });
+        return foundIndex;
+    }
 
     function createRemovalPriorityArray()
     {
@@ -403,21 +423,43 @@ BattleSimulator = function(params) {
     // In: an array of unit counts, which stat index to use (attacker or defender).
     // Returns the number of hits. Uses simulated die rolls if useDice is true,
     // otherwise computes the "ideal" number of hits.
+    // Some special cases follows from the Axis&Allies rules:
+    //    - Artillery upgrades infantery and mech. infantery in attack.
+    //    - Tanks or fighters upgrades tactical bombers in attack.
     function simulateUnitFire(units, statIndex)
     {
         //defenderIpcLoss("simulateUnitFire " +units);
         var hits = 0;
+
+        var artilleryUpgrades = units[artilleryIndex] === undefined ? 0 : units[artilleryIndex];
+        var fighterUpgrades = units[fighterIndex] === undefined ? 0 : units[fighterIndex];
+        var tankUpgrades = units[tankIndex] === undefined ? 0 : units[tankIndex];
+
         units.each(function(unitIndex, count) {
-            var toHit = UnitStats[unitIndex][statIndex];
             if (useDice) {
                for (var i = 0; i < count; ++i) {
+                  var toHit = UnitStats[unitIndex][statIndex];
+
+                  // Upgrades:
+                  if (statIndex == 1) { // attack only
+                  if (artilleryUpgrades > 0 && (unitIndex == infantryIndex || unitIndex == mechanizedInfantryIndex)) {
+                    ++toHit;
+                    --artilleryUpgrades;
+                  } else if (fighterUpgrades > 0 && unitIndex == tacticalBomberIndex) {
+                    ++toHit;
+                    --fighterUpgrades;
+                  } else if (tankUpgrades > 0 && unitIndex == tacticalBomberIndex) {
+                    ++toHit;
+                    --tankUpgrades;
+                } }
+
                   var dieRoll = Math.floor(Math.random()*6) + 1;
                   // defenderIpcLoss("die " + dieRoll + "tohit " + toHit)
                   if (dieRoll <= toHit)
                     ++hits;
                 }
              } else { // no dice
-                var computedHits = carryHits[statIndex] + (toHit / 6.0) * count;
+                var computedHits = carryHits[statIndex] + toHit.map('/ 6.0').reduce('+');
                 var floorHits = Math.floor(computedHits);
                 carryHits[statIndex] = computedHits - floorHits;
                 hits = floorHits;
