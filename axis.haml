@@ -7,6 +7,7 @@
         %script{:type => "text/javascript", :src => "jlayout.flexgrid.js"}
         %script{:type => "text/javascript", :src => "jquery.jlayout.js"}
         %script{:type => "text/javascript", :src => "jquery.sizes.js"}
+        %script{:type => "text/javascript", :src => "highcharts.src.js"}
         %script{:type => "text/javascript", :src => "axis.js"}
         <LINK href="axis.css" rel="stylesheet" type="text/css">
     %body
@@ -16,9 +17,23 @@
             Axis&Allies Battle Simulator
     %div.content.body
         #unitSelector
-        %center
-            %input{type: 'button', id: 'fightButton', value: 'Fight!'}
-        #results
-            %div{id: 'attackerWin'}
-            %div{id: 'defenderWin'}
+        #costs
+            %div.output{id: 'attackerCost', align: 'center'}
+                IPC Cost 0:
+            %div.output{id: 'dummy', align: 'center'}
 
+            %div.output{id: 'defenderCost', align: 'center'}
+                IPC Cost 0:
+        #results
+            %div.output{id: 'attackerWin', align: 'center'}
+                Attacker Wins : 0%
+            %div.output{id: 'mutalAnhiliation', align: 'center'}
+                Mutal Anhiliation: 0%
+            %div.output{id: 'defenderWin', align: 'center'}
+                Defender Wins: 0%
+        #charts{align: 'center'}
+            %div.output{id: 'attackerRemainingUnits', align: 'center'}
+            %div.output{id: 'defenderRemainingUnits', align: 'center'}
+            %div.output{id: 'attackerIpcLoss'}
+            %div.output{id: 'defenderIpcLoss'}
+            %div.output{id: 'battleRounds'}

@@ -28,7 +28,7 @@ body {
 .body {
   background-color : #AAAAAA;
   color : #222222;
-  height : 80%;	
+  height: 200%;
 }
 
 #unitSelector {
@@ -38,4 +38,9 @@ body {
 
 #defenderColumn {
   float: right
+}
+
+.output {
+  margin: 10px;
+  align: center;
 }

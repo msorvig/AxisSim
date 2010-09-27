@@ -36,6 +36,8 @@ UnitSelector = function (params) {
     var attackerUnits = [];
     var defenderUnits = [];
 
+    var results;
+
     function buildSelector() {
         var attackSelectors = createUnitSelectors(attackerUnits, "Attacker");
         var unitList = createUnitList();
@@ -43,7 +45,7 @@ UnitSelector = function (params) {
 
 
         selectorDivElement.maxSize({width : 700}); // ### need to set here as well in the css for some reason.
-         selectorDivElement.layout({
+        selectorDivElement.layout({
             type: 'grid',
             columns: 3,
             fill : "vertical",
@@ -134,7 +136,14 @@ UnitSelector = function (params) {
             value = 0;
         array[index] = value;
         textInput.attr("value", value);
+
+        // FireUnit profiling
+        // console.profile();
+
         unitsChangeCallback(attackerUnits, defenderUnits);
+
+        //console.profileEnd();
+        //fireunit.getProfile();
     }
 
     function setUnitCount(value, array, index) {
@@ -144,8 +153,147 @@ UnitSelector = function (params) {
         unitsChangeCallback(attackerUnits, defenderUnits);
     }
 
+    function createStandardChart(chartDivName, title)
+    {
+        Highcharts.setOptions({
+            colors: ['#353F3E', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']
+        });
+
+
+        var chartDiv = $("#" + chartDivName);
+        chartDiv.css("height", "200px");
+        chartDiv.css("width", "325px");
+        return new Highcharts.Chart({
+      chart: {
+         renderTo: chartDivName,
+         defaultSeriesType: 'column',
+         margin: [ 30, 10, 30, 60],
+      },
+      title: {
+         text: title,
+         style: {
+                font: 'normal 12px Verdana, sans-serif'
+         }
+      },
+      xAxis: {
+         categories: [],
+         labels: {
+            align: 'center',
+            style: {
+                font: 'normal 8px Verdana, sans-serif'
+                    }
+         }
+      },
+      yAxis: {
+         min: 0,
+         title: {
+            text: 'Likelihood (%)'
+         }
+      },
+      legend: {
+         enabled: false
+      },
+      tooltip: {
+         formatter: function() {
+           var unit = "units";
+           if (this.x == 1)
+               unit = "unit";
+
+           return '<b>'+ this.x + ' ' + unit + ' remaining after battle</b><br/>'+
+                'Likelihood: '+ Highcharts.numberFormat(this.y, 1) + "%";
+         }
+      },
+           series: [{
+         name: 'Likelihood',
+         data: [],
+         animation : false,
+         dataLabels: {
+            enabled: false,
+            color: '#FFFFFF',
+            y: 10,
+            formatter: function() {
+               return this.y + "%";
+            },
+            style: {
+               font: 'normal 12px Verdana, sans-serif'
+            }
+         }
+      }]
+   });
+
+    }
+
+
+    function updateChart(chart, data) {
+        chart.xAxis[0].setCategories(data.reduce([], function(initial, index) { initial.push(index); }), false);
+        chart.series[0].setData(data.reduce([], function(initial, index, value) {
+                                        initial.push(value / results.simulationCount * 100);
+                                        }));
+        chart.redraw();
+
+    }
+
+    var attackerRemaingChart = createStandardChart("attackerRemainingUnits", "Attacker Unit Survival");
+    var defenderRemaningChart = createStandardChart("defenderRemainingUnits", "Defender Unit Survival");
+    var attackerIpcLossChart = createStandardChart("attackerIpcLoss", "Attacker IPC Loss");
+    var defenderIpcLossChart = createStandardChart("defenderIpcLoss", "Defender IPC Loss");
+    var battleRoundsChart =  createStandardChart("battleRounds", "Rounds Of Battle");
+
+    $("#costs").maxSize({width : 700});
+    $("#costs").layout({
+            type: 'grid',
+            columns: 3,
+        });
+
+    $("#results").maxSize({width : 700});
+    $("#results").layout({
+            type: 'grid',
+            columns: 3,
+        });
+
+    $("#charts").maxSize({width : 700});
+    $("#charts").layout({
+            type: 'grid',
+            columns: 2
+     });
+
+    function updateResults(newResults) {
+        results = newResults;
+        $("#attackerCost").html("Attacker IPC Cost: " + results.attackerUnitCost);
+        $("#defenderCost").html("Defender IPC Cost: " + results.defenderUnitCost);
+        $("#attackerWin").html("Attacker Wins: " + Math.round(results.attackerWins / results.simulationCount * 100.0) + "%");
+        $("#defenderWin").html("Defender Wins: " + Math.round(results.defenderWins / results.simulationCount * 100.0) + "%");
+        $("#mutalAnhiliation").html("Mutal Anhiliation: " + Math.round(results.mutalAnhiliation / results.simulationCount * 100.0) + "%");
+
+        updateChart(attackerRemaingChart, results.attackerRemaningUnitCount);
+        updateChart(defenderRemaningChart, results.defenderRemaningUnitCount);
+        updateChart(attackerIpcLossChart, results.attackerIpcLoss);
+        updateChart(defenderIpcLossChart, results.defenderIpcLoss);
+        updateChart(battleRoundsChart, results.battleRounds);
+
+/*
+        updateResultCallback(" Attacker Win: " + Math.round(results.attackerWins / results.simulationCount * 100.0) + "%" +
+                             " Defender Win: " + Math.round(results.defenderWins / results.simulationCount * 100.0) + "%" +
+                             " Mutal Anhiliation " + Math.round(results.mutalAnhiliation / results.simulationCount * 100.0) + "%<br>" +
+                             " Attacker Unit IPC cost: " + initalAttackerUnitCost +
+                             " Defender Unit IPC cost: " + initalDefenderUnitCost + "<br>" +
+                             " <br> Simulated Battles: " + results.simulationCount +
+                             " <br>" +
+                             " <br> Attacker Remaning Units: " + prettyPrintSparseArray(results.attackerRemaningUnitCount) +
+                             " <br> Defender Remaning Units: " + prettyPrintSparseArray(results.defenderRemaningUnitCount) +
+                             " <br> Attacker IPC loss: " + prettyPrintSparseArray(results.attackerIpcLoss) +
+                             " <br> Defender IPC loss: " + prettyPrintSparseArray(results.defenderIpcLoss) +
+                             " <br> Battle Rounds: " + prettyPrintSparseArray(results.battleRounds) +
+                             " <br>",
+                             " <br> Battle Example: <br>" + results.simulatedBattleLogs[0]);
+*/
+
+
+    }
+
     return {
-        "buildSelector" : buildSelector
+        "buildSelector" : buildSelector,
+        "updateResults" : updateResults
     };
 };
 
@@ -157,6 +305,17 @@ Array.remove = function(array, from, to) {
 };
 
 Array.prototype.each = function(callBack) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i] !== undefined) {
+            var ret = callBack(i, this[i]);
+            if (ret === false)
+                return;
+        }
+    }
+/*
+    sloow.. but correct. foorlop-and-skip (abowe) looks faster,
+    at least for my arrays.
+
     for (var property in this) {
         if (String(property >>> 0) == property
             && property >>> 0 != 0xffffffff) {
@@ -165,7 +324,8 @@ Array.prototype.each = function(callBack) {
                 return;
         }
     }
-}
+*/
+};
 
 Array.prototype.map = function(callBack) {
     var mapped = [];
@@ -173,7 +333,14 @@ Array.prototype.map = function(callBack) {
         mapped[index] = callBack(value, index);
     });
     return mapped;
-}
+};
+
+Array.prototype.reduce = function(initial, callBack) {
+    this.each(function (index, value){
+        callBack(initial, index, value);
+    });
+    return initial;
+};
 
 BattleSimulator = function(params) {
     var updateResultCallback = params.updateResultCallback;
@@ -206,22 +373,25 @@ BattleSimulator = function(params) {
     var defenderUnitCount = 0;
     var carriedHits = []; // carries fractional hits to the next battle round when useDice is false;
 
+
     // output data, accumulates as the simulations are run.
-    var simulationCount = 0;
-    var attackerWins = 0;
-    var defenderWins = 0;
-    var mutalAnhiliation = 0;
+    var results = {
+        simulationCount : 0,
+        attackerWins : 0,
+        defenderWins : 0,
+        mutalAnhiliation : 0,
 
-    // frequency counts, these are sparse arrays. arr[x] gives the number of times x has occured.
-    var attackerIpcLoss = [];
-    var attackerRemaningUnitCount = [];
-    var defenderIpcLoss = [];
-    var defenderRemaningUnitCount = [];
-    var battleRounds = [];
+        // frequency counts in sparse arrays. arr[x] gives the number of times x has occured.
+        attackerIpcLoss : [],
+        attackerRemaningUnitCount : [],
+        defenderIpcLoss : [],
+        defenderRemaningUnitCount : [],
+        battleRounds : [],
 
-    var idealBattleLog;
-    var simulatedBattleLogs = [];
-    var battleLog = "";
+        idealBattleLog : "",
+        simulatedBattleLogs : [],
+        battleLog : ""
+    }
 
     function findUnit(unitName) {
         var foundIndex = -1;
@@ -295,56 +465,45 @@ BattleSimulator = function(params) {
         initialDefenderUnitCount = countUnits(initialDefenderUnits);
         initalDefenderUnitCost = calculateUnitCost(initialDefenderUnits);
 
-        simulationCount = 0;
-        attackerWins = 0;
-        defenderWins = 0;
-        mutalAnhiliation = 0;
+        results.attackerUnitCost = initalAttackerUnitCost;
+        results.defenderUnitCost = initalDefenderUnitCost
 
-        attackerIpcLoss = [];
-        attackerRemaningUnitCount = [];
-        defenderIpcLoss = [];
-        defenderRemaningUnitCount = [];
-        battleRounds = [];
+        results.simulationCount = 0;
+        results.attackerWins = 0;
+        results.defenderWins = 0;
+        results.mutalAnhiliation = 0;
 
-        idealBattleLog = "";
-        simulatedBattleLogs = [];
-        battleLog = "";
+        results.attackerIpcLoss = [];
+        results.attackerRemaningUnitCount = [];
+        results.defenderIpcLoss = [];
+        results.defenderRemaningUnitCount = [];
+        results.battleRounds = [];
+
+        results.idealBattleLog = "";
+        results.simulatedBattleLogs = [];
+        results.battleLog = "";
 
         simulateBattle();
     }
 
     function simulateBattle() {
-        battleLog = "";
+        results.battleLog = "";
 
         for (var i = 0; i < battleIterations; ++i) {
             setupSimData();
             simulateOneBattle();
-            simulatedBattleLogs[i] = battleLog;
+            results.simulatedBattleLogs[i] = results.battleLog;
         }
 
         function prettyPrintSparseArray(array) {
             return sparseArrayToString(array.map(
                 function (value){
-                    return Math.round((value / simulationCount) * 100.0)
+                    return Math.round((value / results.simulationCount) * 100.0)
                  }
              ), "%");
         }
-
-        updateResultCallback(" Attacker Win: " + Math.round(attackerWins / simulationCount * 100.0) + "%" +
-                             " Defender Win: " + Math.round(defenderWins / simulationCount * 100.0) + "%" +
-                             " Mutal Anhiliation " + Math.round(mutalAnhiliation / simulationCount * 100.0) + "%<br>" +
-                             " Attacker Unit IPC cost: " + initalAttackerUnitCost +
-                             " Defender Unit IPC cost: " + initalDefenderUnitCost + "<br>" +
-                             " <br> Simulated Battles: " + simulationCount +
-                             " <br>" +
-                             " <br> Attacker Remaning Units: " + prettyPrintSparseArray(attackerRemaningUnitCount) +
-                             " <br> Defender Remaning Units: " + prettyPrintSparseArray(defenderRemaningUnitCount) +
-                             " <br> Attacker IPC loss: " + prettyPrintSparseArray(attackerIpcLoss) +
-                             " <br> Defender IPC loss: " + prettyPrintSparseArray(defenderIpcLoss) +
-                             " <br> Battle Rounds: " + prettyPrintSparseArray(battleRounds) +
-                             " <br>",
-                             " <br> Battle Example: <br>" + simulatedBattleLogs[0]);
-    }
+        updateResultCallback(results);
+  }
 
 
 
@@ -357,24 +516,24 @@ BattleSimulator = function(params) {
     }
 
     function simulateOneBattle() {
-        //defenderIpcLoss("Fight!");
+        //results.defenderIpcLoss("Fight!");
         carriedHits = [];
 
         var roundCounter = 1;
 
-        //defenderIpcLoss("first Unit count: " + attackerUnits + " " + defenderUnits);
-        battleLog += "Start ";
-        battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount+ " <br>";
+        //results.defenderIpcLoss("first Unit count: " + attackerUnits + " " + defenderUnits);
+        results.battleLog += "Start ";
+        results.battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount+ " <br>";
 
         // Run battle rounds until one side is out of units.
         while (attackerUnitCount > 0 && defenderUnitCount > 0) {
-            battleLog += "Round " + roundCounter++ + " ";
-            // defenderIpcLoss("begin while loop");
+            results.battleLog += "Round " + roundCounter++ + " ";
+            // results.defenderIpcLoss("begin while loop");
             simulateBattleRound();
-            battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount + " "
+            results.battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount + " "
                          + attackerUnits + " " + defenderUnits + " <br>";
 
-            // defenderIpcLoss("Unit count: " + attackerUnits + " " + defenderUnits);
+            // results.defenderIpcLoss("Unit count: " + attackerUnits + " " + defenderUnits);
 
         }
 
@@ -387,34 +546,34 @@ BattleSimulator = function(params) {
         }
 
         // Determine winner, update output data
-        ++simulationCount;
-        incrementArrayValue(battleRounds, roundCounter);
-        incrementArrayValue(defenderIpcLoss, initalDefenderUnitCost - calculateUnitCost(defenderUnits));
-        incrementArrayValue(defenderRemaningUnitCount, defenderUnitCount);
-        incrementArrayValue(attackerIpcLoss, initalAttackerUnitCost - calculateUnitCost(attackerUnits));
-        incrementArrayValue(attackerRemaningUnitCount, attackerUnitCount);
+        ++results.simulationCount;
+        incrementArrayValue(results.battleRounds, roundCounter);
+        incrementArrayValue(results.defenderIpcLoss, initalDefenderUnitCost - calculateUnitCost(defenderUnits));
+        incrementArrayValue(results.defenderRemaningUnitCount, defenderUnitCount);
+        incrementArrayValue(results.attackerIpcLoss, initalAttackerUnitCost - calculateUnitCost(attackerUnits));
+        incrementArrayValue(results.attackerRemaningUnitCount, attackerUnitCount);
 
         if (attackerUnitCount == 0 && defenderUnitCount == 0) {
-            battleLog += "Mutal Annhiliation!";
-            ++mutalAnhiliation;
+            results.battleLog += "Mutal Annhiliation!";
+            ++results.mutalAnhiliation;
         } else if (attackerUnitCount == 0) {
-            battleLog += "Defender Wins!";
-            ++defenderWins;
+            results.battleLog += "Defender Wins!";
+            ++results.defenderWins;
         } else if (defenderUnitCount == 0) {
-            battleLog += "Attacker Wins!";
-            ++attackerWins;
+            results.battleLog += "Attacker Wins!";
+            ++results.attackerWins;
         }
     };
 
     // Runs one round of battle simultaion ( attacker fires, defender fires, casulties removed etc.)
     function simulateBattleRound()
     {
-        //defenderIpcLoss("simulateBattleRound");
+        //results.defenderIpcLoss("simulateBattleRound");
         var attackerHits = simulateUnitFire(attackerUnits, 1);
         var defenderHits = simulateUnitFire(defenderUnits, 2);
 
-        //defenderIpcLoss("hits " + attackerHits + " " + defenderHits);
-        battleLog += "Hits:" + attackerHits + " " + defenderHits + "  ";
+        //results.defenderIpcLoss("hits " + attackerHits + " " + defenderHits);
+        results.battleLog += "Hits:" + attackerHits + " " + defenderHits + "  ";
 
         attackerUnitCount = removeCasulties(attackerUnits, attackerUnitCount, defenderHits);
         defenderUnitCount = removeCasulties(defenderUnits, defenderUnitCount, attackerHits);
@@ -428,7 +587,7 @@ BattleSimulator = function(params) {
     //    - Tanks or fighters upgrades tactical bombers in attack.
     function simulateUnitFire(units, statIndex)
     {
-        //defenderIpcLoss("simulateUnitFire " +units);
+        //results.defenderIpcLoss("simulateUnitFire " +units);
         var hits = 0;
 
         var artilleryUpgrades = units[artilleryIndex] === undefined ? 0 : units[artilleryIndex];
@@ -454,7 +613,7 @@ BattleSimulator = function(params) {
                 } }
 
                   var dieRoll = Math.floor(Math.random()*6) + 1;
-                  // defenderIpcLoss("die " + dieRoll + "tohit " + toHit)
+                  // results.defenderIpcLoss("die " + dieRoll + "tohit " + toHit)
                   if (dieRoll <= toHit)
                     ++hits;
                 }
@@ -504,15 +663,9 @@ BattleSimulator = function(params) {
 
 // Main function
 $(document).ready(function() {
-    // ### move to class?
-    function updatePercentages(attacker, defender)
-    {
-        $("#attackerWin").html(attacker);
-        $("#defenderWin").html(defender);
-    }
 
     var battlesimulator = new BattleSimulator(
-        { "updateResultCallback": updatePercentages }
+        { "updateResultCallback": updateResults }
     );
 
     var unitSelector = new UnitSelector(
@@ -520,4 +673,9 @@ $(document).ready(function() {
          "unitsChangeCallback": battlesimulator.simulateNewBattle,
          "fightCallback": battlesimulator.simulateBattle });
     unitSelector.buildSelector();
+
+    function updateResults(results) {
+        unitSelector.updateResults(results);
+    }
+
 });

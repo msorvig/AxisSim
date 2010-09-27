@@ -7,6 +7,7 @@
     <script src='jlayout.flexgrid.js' type='text/javascript'></script>
     <script src='jquery.jlayout.js' type='text/javascript'></script>
     <script src='jquery.sizes.js' type='text/javascript'></script>
+    <script src='highcharts.src.js' type='text/javascript'></script>
     <script src='axis.js' type='text/javascript'></script>
     <LINK href="axis.css" rel="stylesheet" type="text/css">
   </head>
@@ -18,12 +19,32 @@
   </div>
   <div class='content body'>
     <div id='unitSelector'></div>
-    <center>
-      <input id='fightButton' type='button' value='Fight!' />
-    </center>
+    <div id='costs'>
+      <div align='center' class='output' id='attackerCost'>
+        IPC Cost 0:
+      </div>
+      <div align='center' class='output' id='dummy'></div>
+      <div align='center' class='output' id='defenderCost'>
+        IPC Cost 0:
+      </div>
+    </div>
     <div id='results'>
-      <div id='attackerWin'></div>
-      <div id='defenderWin'></div>
+      <div align='center' class='output' id='attackerWin'>
+        Attacker Wins : 0%
+      </div>
+      <div align='center' class='output' id='mutalAnhiliation'>
+        Mutal Anhiliation: 0%
+      </div>
+      <div align='center' class='output' id='defenderWin'>
+        Defender Wins: 0%
+      </div>
+    </div>
+    <div align='center' id='charts'>
+      <div align='center' class='output' id='attackerRemainingUnits'></div>
+      <div align='center' class='output' id='defenderRemainingUnits'></div>
+      <div class='output' id='attackerIpcLoss'></div>
+      <div class='output' id='defenderIpcLoss'></div>
+      <div class='output' id='battleRounds'></div>
     </div>
   </div>
 </html>
