@@ -5,15 +5,18 @@
 // Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
 // Unit stats.
-// Array of: [Unit Name, Attack Rating, Defence Rating, IPC Cost]
+// Array of: [Unit Name, Attack Rating, Defence Rating, IPC Cost, Flying,
+//               Participates in Land Battles, Participates Sea Battles]
+
+
 var UnitStats = [
-    ["Infantry", 1, 2, 3],
-    ["Mechanized Infantry", 1, 2, 4],
-    ["Artillery", 2, 2, 4],
-    ["Tank",      3, 3, 6],
-    ["Fighter",   3, 4, 10],
-    ["Tactical Bomber", 3, 3, 11],
-    ["Bomber",    4, 1, 11],
+    ["Infantry",            1, 2, 3, false, true, false],
+    ["Mechanized Infantry", 1, 2, 4, false, true, false],
+    ["Artillery",           2, 2, 4, false, true, false],
+    ["Tank",                3, 3, 6, false, true, false],
+    ["Fighter",             3, 4, 10, true, true, false],
+    ["Tactical Bomber",     3, 3, 11, true, true, false],
+    ["Bomber",              4, 1, 11, true, true, false],
 ];
 
 // Unit selector
@@ -35,6 +38,7 @@ UnitSelector = function (params) {
     // number of attacker tanks for example)
     var attackerUnits = [];
     var defenderUnits = [];
+    var defenderAaGun = false;
 
     var results;
 
@@ -51,6 +55,15 @@ UnitSelector = function (params) {
             fill : "vertical",
             items : attackSelectors + unitList + defenceSelectors
         });
+
+        var aaGun = new CheckBox($("#aaGunSelector"), "aaGun");
+        aaGun.setText("AA Gun");
+        aaGun.addChangeCallback(function () {
+            defenderAaGun = aaGun.value;
+            unitsChangeCallback(attackerUnits, defenderUnits, defenderAaGun);
+        });
+        aaGun.container.attr("align", "right");
+        //jCreate(aaGun, "aaGun", "aaGunSelector")
     }
 
     // Creates unit selectors for the attacker or defender
@@ -140,7 +153,7 @@ UnitSelector = function (params) {
         // FireUnit profiling
         // console.profile();
 
-        unitsChangeCallback(attackerUnits, defenderUnits);
+        unitsChangeCallback(attackerUnits, defenderUnits, defenderAaGun);
 
         //console.profileEnd();
         //fireunit.getProfile();
@@ -150,77 +163,7 @@ UnitSelector = function (params) {
         if (value < 0)
             value = 0;
         array[index] = value;
-        unitsChangeCallback(attackerUnits, defenderUnits);
-    }
-
-    function createStandardChart(chartDivName, title)
-    {
-        Highcharts.setOptions({
-            colors: ['#353F3E', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']
-        });
-
-
-        var chartDiv = $("#" + chartDivName);
-        chartDiv.css("height", "200px");
-        chartDiv.css("width", "325px");
-        return new Highcharts.Chart({
-      chart: {
-         renderTo: chartDivName,
-         defaultSeriesType: 'column',
-         margin: [ 30, 10, 30, 60],
-      },
-      title: {
-         text: title,
-         style: {
-                font: 'normal 12px Verdana, sans-serif'
-         }
-      },
-      xAxis: {
-         categories: [],
-         labels: {
-            align: 'center',
-            style: {
-                font: 'normal 8px Verdana, sans-serif'
-                    }
-         }
-      },
-      yAxis: {
-         min: 0,
-         title: {
-            text: 'Likelihood (%)'
-         }
-      },
-      legend: {
-         enabled: false
-      },
-      tooltip: {
-         formatter: function() {
-           var unit = "units";
-           if (this.x == 1)
-               unit = "unit";
-
-           return '<b>'+ this.x + ' ' + unit + ' remaining after battle</b><br/>'+
-                'Likelihood: '+ Highcharts.numberFormat(this.y, 1) + "%";
-         }
-      },
-           series: [{
-         name: 'Likelihood',
-         data: [],
-         animation : false,
-         dataLabels: {
-            enabled: false,
-            color: '#FFFFFF',
-            y: 10,
-            formatter: function() {
-               return this.y + "%";
-            },
-            style: {
-               font: 'normal 12px Verdana, sans-serif'
-            }
-         }
-      }]
-   });
-
+        unitsChangeCallback(attackerUnits, defenderUnits, defenderAaGun);
     }
 
 
@@ -427,12 +370,15 @@ BattleSimulator = function(params) {
         return newArray;
     }
 
-    function countUnits(unitArray) {
+    function countUnits(unitArray, planesOnly) {
         //console.log("countUnits " + unitArray);
         var unitCount = 0;
+        if (planesOnly === undefined)
+            planesOnly = false;
         unitArray.each(function(index, count) {
             //console.log("countUnits at " + index + " " + count);
-            unitCount += count;
+            if (!planesOnly || UnitStats[index][4] == true)
+                unitCount += count;
         });
         //console.log("countUnits " + unitCount);
         return unitCount;
@@ -457,12 +403,13 @@ BattleSimulator = function(params) {
     }
 
 
-    function simulateNewBattle(newAttackerUnits, newDefenderUnits) {
+    function simulateNewBattle(newAttackerUnits, newDefenderUnits, newDefenderAAGun) {
         initialAttackerUnits = createSparseUnitArrayCopy(newAttackerUnits);
         initialAttackerUnitCount = countUnits(initialAttackerUnits);
         initalAttackerUnitCost = calculateUnitCost(initialAttackerUnits);
         initialDefenderUnits = createSparseUnitArrayCopy(newDefenderUnits);
         initialDefenderUnitCount = countUnits(initialDefenderUnits);
+        initialDefenderAAGun = newDefenderAAGun;
         initalDefenderUnitCost = calculateUnitCost(initialDefenderUnits);
 
         results.attackerUnitCost = initalAttackerUnitCost;
@@ -513,6 +460,7 @@ BattleSimulator = function(params) {
         attackerUnitCount = initialAttackerUnitCount;
         defenderUnits = initialDefenderUnits.slice(0);
         defenderUnitCount = initialDefenderUnitCount;
+        defenderAAGun = initialDefenderAAGun;
     }
 
     function simulateOneBattle() {
@@ -524,6 +472,9 @@ BattleSimulator = function(params) {
         //results.defenderIpcLoss("first Unit count: " + attackerUnits + " " + defenderUnits);
         results.battleLog += "Start ";
         results.battleLog += "Units Left: " + attackerUnitCount + " " + defenderUnitCount+ " <br>";
+
+        if (defenderAAGun == true)
+            simulateAAGunFire();
 
         // Run battle rounds until one side is out of units.
         while (attackerUnitCount > 0 && defenderUnitCount > 0) {
@@ -564,6 +515,20 @@ BattleSimulator = function(params) {
             ++results.attackerWins;
         }
     };
+
+    function simulateAAGunFire()
+    {
+        var planeCount = countUnits(attackerUnits, true /* planes only*/);
+        var hits = 0;
+
+        for (var i = 0; i < planeCount; ++i) {
+            var dieRoll = Math.floor(Math.random()*6) + 1;
+            if (dieRoll == 1)
+                ++hits;
+        }
+
+        removeCasulties(attackerUnits, attackerUnitCount, hits,  true /* planes only*/)
+    }
 
     // Runs one round of battle simultaion ( attacker fires, defender fires, casulties removed etc.)
     function simulateBattleRound()
@@ -627,7 +592,8 @@ BattleSimulator = function(params) {
         return hits;
     }
 
-    function removeCasulties(units, unitCount, hits)
+
+    function removeCasulties(units, unitCount, hits, planesOnly)
     {
        // sole.log("removeCasulties " + unitCount);
         unitCount = Math.max(0, unitCount - hits);
@@ -638,6 +604,8 @@ BattleSimulator = function(params) {
         unitRemovalPriority.each(function(index, value) {
             if (hits == 0)
                 return false;
+            if (planesOnly && UnitStats[value][4] == false)
+                return true;
             var currentUnitCount = units[value];
             if (currentUnitCount == undefined || currentUnitCount == 0)
                 return true;
@@ -651,6 +619,7 @@ BattleSimulator = function(params) {
                 return false;
             }
         });
+
         return unitCount;
     }
 

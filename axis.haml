@@ -8,6 +8,8 @@
         %script{:type => "text/javascript", :src => "jquery.jlayout.js"}
         %script{:type => "text/javascript", :src => "jquery.sizes.js"}
         %script{:type => "text/javascript", :src => "highcharts.src.js"}
+        %script{:type => "text/javascript", :src => "chart.js"}
+        %script{:type => "text/javascript", :src => "widgets.js"}
         %script{:type => "text/javascript", :src => "axis.js"}
         <LINK href="axis.css" rel="stylesheet" type="text/css">
     %body
@@ -17,6 +19,7 @@
             Axis&Allies Battle Simulator
     %div.content.body
         #unitSelector
+        #aaGunSelector
         #costs
             %div.output{id: 'attackerCost', align: 'center'}
                 IPC Cost 0:
