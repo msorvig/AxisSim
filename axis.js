@@ -33,6 +33,10 @@ UnitSelector = function (params) {
         fightCallback();
     });
 
+    var battleTypeElement = $("#battleTypeSelector");
+    console.log("battle type div " + battleTypeElement);
+
+
     // Array of unit counts. Array indices corresponds to
     // the indices in the UnitStats array. (attackerUnits[1] is the
     // number of attacker tanks for example)
@@ -43,11 +47,13 @@ UnitSelector = function (params) {
     var results;
 
     function buildSelector() {
+
+        var battleType = RadioButtonSet(battleTypeElement, "battleType", ["Land", "Sea"]);
+        battleTypeElement.buttonset();
+
         var attackSelectors = createUnitSelectors(attackerUnits, "Attacker");
         var unitList = createUnitList();
         var defenceSelectors = createUnitSelectors(defenderUnits, "Defender");
-
-
         selectorDivElement.maxSize({width : 700}); // ### need to set here as well in the css for some reason.
         selectorDivElement.layout({
             type: 'grid',

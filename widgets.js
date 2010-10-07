@@ -33,3 +33,44 @@ CheckBox = function(parentContainer, objectName)
 
     return this;
 }
+
+RadioButtonSet = function(parentContainer, objectName, labels) {
+    var me = this;
+
+    var buttons = [];
+
+    var i = 0;
+    labels.each(function(index, value) {
+        console.log("adding " + value)
+        var radioButton = $('<input type="radio" id="radio' + i + '" name="' + objectName + '" />');
+        var radioLabel =  $('<label for="radio' + i + '">' + labels[i] + '</label>');
+        radioButton.button();
+        buttons[i] = radioButton;
+        parentContainer.append(radioButton);
+        parentContainer.append(radioLabel);
+        ++i;
+    });
+
+    setSelected(0);
+
+    function setSelected(selectedIndex) {
+        buttons[selectedIndex][0].checked = true;
+        buttons[0].button("refresh");
+    }
+
+    function selectedIndex() {
+        buttons.each(function(index, value) {} )
+    }
+
+    function selectedLabel() {
+
+    }
+
+    return this;
+}
+
+
+
+//<input type="radio" id="radio2" name="radio" checked="checked" /><label for="radio2">Choice 2</label>
+//<input type="radio" id="radio3" name="radio" /><label for="radio3">Choice 3</label>
+
