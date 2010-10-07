@@ -1,20 +1,43 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <script src='jquery.js' type='text/javascript'></script>
-    <script src='ipad.js' type='text/javascript'></script>
-
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="icon.png"/>
+    <title>Carousel</title>
+    <link rel="stylesheet" href="ext-touch.css" type="text/css">
+    <script type="text/javascript" src="ext-touch.js"></script>
+    <script type="text/javascript" src="index.js"></script>
 
-    <title>Ipad Test</title>
-  <body>
-    Hello Fullscreen World
-    <div id=fullscreen> Fullscreen? </div>
-    <div id=touch> Touch Me </div>
+    <style>
+        body {
+            background-color: #376daa;
+        }
+        .card {
+            text-align: center;
+            color: #204167;
+            text-shadow: #3F80CA 0 1px 0;
+            font-size: 72px;
+            padding: 80px 40px;
+        }
 
+        .x-phone .card {
+            padding: 15px;
+            font-size: 36px;
+        }
 
-  </body>
+        .card p {
+            font-size: 24px;
+            line-height: 30px;
+        }
+
+        .x-phone .card p {
+            font-size: 16px;
+            line-height: 18px;
+        }
+    </style>
+</head>
+<body></body>
 </html>
-
