@@ -21,12 +21,35 @@ var battleTypeGroup = [{
 }];
 
 var battleTypeToolBar = [new Ext.Toolbar({
-            title: 'Battle Type',
             ui: 'dark',
             dock: 'top',
-            centered: true,
             items: battleTypeGroup
 })];
+
+var unitsCard = new Ext.Panel({
+    dockedItems: battleTypeToolBar,
+    title: 'Units',
+    iconCls: 'favorites',
+        layout :  { type: 'vbox',
+            align: 'stretch'
+        }
+});
+
+var buildUnitsCard = function() {
+
+    unitsCard.add(new Ext.Panel({ html : "test1", maxHeight : 50}));
+    unitsCard.add(new Ext.Panel({ html : "test2", maxHeight : 50}));
+    unitsCard.add(new Ext.Panel({ html : "test3", maxHeight : 50}));
+};
+buildUnitsCard();
+
+
+var chartsCard = new Ext.Panel({
+    title: 'Charts',
+    iconCls: 'settings',
+    html: 'Charts!',
+});
+
 
 Ext.setup({
     tabletStartupScreen: 'tablet_startup.png',
@@ -34,17 +57,27 @@ Ext.setup({
     icon: 'carousel.png',
     glossOnIcon: false,
     onReady: function() {
-        new Ext.Panel({
+       var tabpanel = new Ext.TabPanel({
+            tabBar: {
+                dock: 'bottom',
+                layout: {
+                    pack: 'center'
+                }
+            },
             fullscreen: true,
-//            layout: {
-//                type: 'vbox',
-//                align: 'top'
-//            },
-//            defaults: {
-//                flex: 1
-//            },
+            ui: 'dark',
+            animation: {
+                type: 'cardslide',
+                cover: true
+            },
 
-         items: [battleTypeToolBar]
+            defaults: {
+                scroll: 'vertical'
+            },
+            items: [
+                unitsCard, chartsCard
+            ]
         });
     }
+
 });
