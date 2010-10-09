@@ -35,13 +35,35 @@ var unitsCard = new Ext.Panel({
         }
 });
 
+   var tabs = new Ext.Container({
+        layout: 'hbox',
+        items: [
+            new Ext.Spacer({
+            }),
+            new Ext.Button({
+                text : "-",
+            }),
+            new Ext.form.TextField({
+                flex: 1,
+                maxWidth : 50,
+                minWidth : 50,
+            }),
+            new Ext.Button({
+                text : "+",
+            }),
+            new Ext.Spacer({
+            }),
+        ]
+    });
+
 var buildUnitsCard = function() {
 
-    unitsCard.add(new Ext.Panel({ html : "test1", maxHeight : 50}));
-    unitsCard.add(new Ext.Panel({ html : "test2", maxHeight : 50}));
-    unitsCard.add(new Ext.Panel({ html : "test3", maxHeight : 50}));
+    unitsCard.add(tabs);
+    unitsCard.doLayout();
 };
 buildUnitsCard();
+
+
 
 
 var chartsCard = new Ext.Panel({
