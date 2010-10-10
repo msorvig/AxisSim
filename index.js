@@ -35,7 +35,8 @@ var unitsCard = new Ext.Panel({
         }
 });
 
-   var tabs = new Ext.Container({
+function createUnitSelector() {
+   return new Ext.Container({
         layout: 'hbox',
         items: [
             new Ext.Spacer({
@@ -45,6 +46,7 @@ var unitsCard = new Ext.Panel({
             }),
             new Ext.form.TextField({
                 flex: 1,
+                value : 0,
                 maxWidth : 50,
                 minWidth : 50,
             }),
@@ -55,10 +57,14 @@ var unitsCard = new Ext.Panel({
             }),
         ]
     });
+}
 
 var buildUnitsCard = function() {
 
-    unitsCard.add(tabs);
+    UnitStats.each(function(index, value){
+        unitsCard.add(createUnitSelector());
+    });
+
     unitsCard.doLayout();
 };
 buildUnitsCard();
