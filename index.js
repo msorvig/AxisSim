@@ -15,7 +15,7 @@
         array[index] = value;
         textInput.setValue(value);
 
-        console.log("change " + value + textInput.value);
+        //console.log("change " + value + textInput.value);
 
         // FireUnit profiling
         // console.profile();
