@@ -73,7 +73,7 @@ var unitsCard = new Ext.Panel({
 
 function createUnitSelector(array, index) {
     array[index] = initalUnitCount;
-    var textField = new Ext.form.TextField({
+    var textField = new Ext.form.NumberField({
                         flex: 1,
                         value : initalUnitCount,
                         maxWidth : 50,
@@ -103,8 +103,10 @@ function createUnitSelector(array, index) {
     });
 }
 
-function createUnitSelectors(container, array)
+function createUnitSelectors(container, array, label)
 {
+
+  //  container.add({ html : label, });
     UnitStats.each(function(index, value){
         container.add(createUnitSelector(array, index));
     });
@@ -113,7 +115,7 @@ function createUnitSelectors(container, array)
 }
 
 var buildUnitsCard = function() {
-    createUnitSelectors(unitsCard, attackerUnits);
+    createUnitSelectors(unitsCard, attackerUnits, "Attacker");
 };
 buildUnitsCard();
 
