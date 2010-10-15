@@ -66,7 +66,7 @@ var unitsCard = new Ext.Panel({
     dockedItems: battleTypeToolBar,
     title: 'Units',
     iconCls: 'favorites',
-        layout :  { type: 'vbox',
+        layout :  { type: 'hbox',
             align: 'stretch'
         }
 });
@@ -103,19 +103,51 @@ function createUnitSelector(array, index) {
     });
 }
 
-function createUnitSelectors(container, array, label)
-{
+function createUnitLabel(array, index) {
+    // ### should be a text label of some sort
+    var textField = new Ext.form.TextField({
+                        flex: 1,
+                        value : "FooBar",
+                        maxWidth : 50,
+                        minWidth : 50,
+                        width : 100,
+                    });
+    return new Ext.Container({
+        layout: 'hbox',
+        items : [textField]
+    });
+}
 
-  //  container.add({ html : label, });
+function createlineItems(func, container, array, label)
+{
     UnitStats.each(function(index, value){
-        container.add(createUnitSelector(array, index));
+        container.add(func(array, index));
     });
 
-    unitsCard.doLayout();
+    container.doLayout();
 }
 
 var buildUnitsCard = function() {
-    createUnitSelectors(unitsCard, attackerUnits, "Attacker");
+    var attackerPanel =  new Ext.Container({
+        layout: 'vbox' });
+    createlineItems(createUnitSelector, attackerPanel, attackerUnits, "Attacker");
+
+    var labelPanel =  new Ext.Container({
+        layout: 'vbox' });
+    createlineItems(createUnitLabel, labelPanel);
+
+    var defenderPanel =  new Ext.Container({
+        layout: 'vbox' });
+    createlineItems(createUnitSelector, defenderPanel, defenderUnits, "Defender");
+
+        unitsCard.add(attackerPanel);
+        unitsCard.add(labelPanel);
+        unitsCard.add(defenderPanel);
+        unitsCard.doLayout();
+
+     //createUnitSelectors(unitsCard, attackerUnits, "Attacker");
+
+
 };
 buildUnitsCard();
 
