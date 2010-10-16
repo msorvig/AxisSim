@@ -73,32 +73,33 @@ var unitsCard = new Ext.Panel({
 
 function createUnitSelector(array, index) {
     array[index] = initalUnitCount;
-    var textField = new Ext.form.NumberField({
+    var textField = new Ext.form.TextField({
                         flex: 1,
                         value : initalUnitCount,
                         maxWidth : 50,
                         minWidth : 50,
+                        align: "center",
                     });
 
     return new Ext.Container({
         layout: 'hbox',
+        width : 200,
         items: [
-            new Ext.Spacer({
-            }),
+            new Ext.Spacer({flex: 1}),
             new Ext.Button({
                 text : "-",
                 handler : function (button, event)
                           { changeUnitCount(-1, array, index, textField); }
             }),
-                textField
-            ,
+            //new Ext.Spacer({flex: 4}),
+            textField,
+            //new Ext.Spacer({flex: 4}),
             new Ext.Button({
                 text : "+",
                 handler : function (button, event)
                           { changeUnitCount(1, array, index, textField); }
             }),
-            new Ext.Spacer({
-            }),
+            new Ext.Spacer({flex: 1}),
         ]
     });
 }
@@ -107,14 +108,15 @@ function createUnitLabel(array, index) {
     // ### should be a text label of some sort
     var textField = new Ext.form.TextField({
                         flex: 1,
-                        value : "FooBar",
+                        value : UnitStats[index][0],
                         maxWidth : 50,
                         minWidth : 50,
                         width : 100,
                     });
     return new Ext.Container({
         layout: 'hbox',
-        items : [textField]
+        items : [textField],
+        width : 200,
     });
 }
 
@@ -129,7 +131,7 @@ function createlineItems(func, container, array, label)
 
 var buildUnitsCard = function() {
     var attackerPanel =  new Ext.Container({
-        layout: 'vbox' });
+        layout: 'vbox'});
     createlineItems(createUnitSelector, attackerPanel, attackerUnits, "Attacker");
 
     var labelPanel =  new Ext.Container({
