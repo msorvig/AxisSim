@@ -28,7 +28,7 @@ CheckBox = function(parentContainer, objectName)
 
     // private
     this.addChangeCallback(function() {
-        me.value = (me.input.attr("value") == "on") }
+        me.value = (me.input.attr("checked") == true) }
     );
 
     return this;
